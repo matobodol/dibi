@@ -6,18 +6,49 @@ use crate::{db::HeaderType, error::DbError};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Flags {
-    pub primary_key: bool,
-    pub increment: bool,
-    pub nullable: bool,
+    primary_key: bool,
+    increment: bool,
+    nullable: bool,
 }
 
-impl Flags {
-    pub fn default() -> Self {
+impl Default for Flags {
+    fn default() -> Self {
         Self {
             primary_key: false,
             increment: false,
             nullable: true,
         }
+    }
+}
+impl Flags {
+    pub fn primary_key(&mut self, set: bool) {
+        if set {
+            self.primary_key = true;
+            self.nullable(false);
+        } else {
+            self.primary_key = false;
+            self.nullable(true);
+        }
+    }
+    pub fn increment(&mut self, set: bool) {
+        self.increment = set;
+    }
+    pub fn nullable(&mut self, set: bool) {
+        if !self.primary_key {
+            self.nullable = set
+        }
+        self.nullable = self.is_nul();
+    }
+
+    // read
+    pub fn is_pk(&self) -> bool {
+        self.primary_key
+    }
+    pub fn is_inc(&self) -> bool {
+        self.increment
+    }
+    pub fn is_nul(&self) -> bool {
+        self.nullable
     }
 }
 
@@ -69,6 +100,22 @@ impl Header {
         Ok(())
     }
 
+    pub fn set_pk(&mut self, name: &str) -> Result<(), DbError> {
+        let &new_idx = self
+            .index_header
+            .get(name)
+            .ok_or_else(|| DbError::HeaderNotFound)?;
+
+        if let Some(old_pk) = self.index_primary {
+            self.column[old_pk].flags.primary_key(false);
+        }
+
+        self.column[new_idx].flags.primary_key(true);
+        self.index_primary = Some(new_idx);
+
+        Ok(())
+    }
+
     fn validate_new_header(&self, name: &str) -> Result<(), DbError> {
         if self.index_header.contains_key(name) {
             return Err(DbError::DuplicateHeaderName {
@@ -79,20 +126,27 @@ impl Header {
         Ok(())
     }
 
-    pub fn set_pk(&mut self, name: &str) -> Result<(), DbError> {
-        let &new_idx = self
-            .index_header
-            .get(name)
-            .ok_or_else(|| DbError::HeaderNotFound)?;
+    pub fn validate_nullable(&self, idx_column: usize) -> Result<(), DbError> {
+        let nullable = self.column[idx_column].flags.is_nul();
+        let isprimary = self.column[idx_column].flags.is_pk();
 
-        if let Some(old_pk) = self.index_primary {
-            self.column[old_pk].flags.primary_key = false;
-            self.column[old_pk].flags.nullable = true;
+        if !nullable || isprimary {
+            return Err(DbError::CannotBeNull(
+                "Protected by 'fn validate_nullable()'".into(),
+            ));
         }
 
-        self.column[new_idx].flags.nullable = false;
-        self.column[new_idx].flags.primary_key = true;
-        self.index_primary = Some(new_idx);
+        Ok(())
+    }
+
+    pub fn validate_values_count(&self, row_len: usize) -> Result<(), DbError> {
+        let header_len = self.index_header.len();
+
+        if row_len < header_len {
+            return Err(DbError::ValuesCountIsLess);
+        } else if row_len > header_len {
+            return Err(DbError::ValuesCountIsGreet);
+        }
 
         Ok(())
     }

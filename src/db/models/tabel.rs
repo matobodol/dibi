@@ -30,20 +30,23 @@ impl Tabel {
         Ok(())
     }
 
-    pub fn insert_rows(&mut self, rows: HRows) -> Result<(), DbError> {
-        let mut rows = rows;
+    pub fn insert_rows(&mut self, hrow: HRows) -> Result<(), DbError> {
+        let mut hrow = hrow;
+        let values_count = hrow.value.len();
+        let header_count = self.header.index_header.len();
 
-        if rows.value.len() < self.header.index_header.len() {
-            let idx = rows.value.len();
-            let nullable = self.header.column[idx].flags.nullable;
-            let isprimary = self.header.column[idx].flags.primary_key;
+        if values_count < header_count {
+            self.header.validate_nullable(values_count)?;
 
-            if !nullable || isprimary {
-                return Err(DbError::CannotBeNull);
+            for _ in 0..(header_count - values_count) {
+                hrow.value.push(Value::Null);
             }
-            rows.value.push(Value::Null);
         }
-        self.vrow.hrow.push(rows);
+        if values_count > header_count {
+            return Err(DbError::ValuesCountIsGreet);
+        }
+
+        self.vrow.hrow.push(hrow);
         Ok(())
     }
 }

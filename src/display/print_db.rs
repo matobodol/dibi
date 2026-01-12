@@ -16,7 +16,7 @@ pub fn print_db(db: &Database, table_name: &str) -> Result<(), PtError> {
         .column
         .iter()
         .map(|k| {
-            if k.flags.primary_key {
+            if k.flags.is_pk() {
                 let s = format!("*{}", &k.name);
                 Cell::new(&s)
                     .style_spec("c")

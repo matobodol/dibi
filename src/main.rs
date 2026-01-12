@@ -44,6 +44,7 @@ fn main() {
     tabel_siswa
         .new_header("Siswa", HeaderType::Str, Flags::default())
         .unwrap();
+
     tabel_siswa
         .new_header("Kelas", HeaderType::Str, Flags::default())
         .unwrap();
@@ -63,7 +64,7 @@ fn main() {
         .insert_rows(HRows {
             value: vec![
                 Value::Int(2),
-                Value::Str("Bunga Teman Sebangku Jani".into()),
+                Value::Str("Bunga Teman SD Jani".into()),
                 Value::Str("9A".into()),
             ],
         })

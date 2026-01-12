@@ -1,8 +1,8 @@
 use crate::Value;
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum DbError {
-    CannotBeNull,
+    CannotBeNull(String),
     E(String),
     PrimaryKeyIsAxist {
         tip: String,
@@ -18,8 +18,8 @@ pub enum DbError {
         reasoon: String,
         found: Value,
     },
-    ColumnCountMissMatch {
-        reason: String,
-    },
+    ColumnCountMissMatch,
+    ValuesCountIsLess,
+    ValuesCountIsGreet,
     ValurNotFound,
 }
