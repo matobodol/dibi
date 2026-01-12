@@ -1,4 +1,4 @@
-use mini_db::{Database, Flags, HRows, HeaderType, Value, display::print_db::print_db};
+use mini_db::{Database, Flags, HeaderType, Value, display::print_db::print_db};
 
 fn main() {
     let mut db = Database::new();
@@ -26,14 +26,10 @@ fn main() {
     tabel_user.header.set_pk("User").unwrap();
 
     tabel_user
-        .insert_rows(HRows {
-            value: vec![Value::Int(1), Value::Str("Jono".into())],
-        })
+        .insert_rows(vec![Value::Int(1), Value::Str("Jono".into())])
         .unwrap();
     tabel_user
-        .insert_rows(HRows {
-            value: vec![Value::Int(2), Value::Str("Budi Wisesa".into())],
-        })
+        .insert_rows(vec![Value::Int(2), Value::Str("Budi Wisesa".into())])
         .unwrap();
 
     /* SISWA */
@@ -52,31 +48,25 @@ fn main() {
     tabel_siswa.header.set_pk("id").unwrap();
 
     tabel_siswa
-        .insert_rows(HRows {
-            value: vec![
-                Value::Int(1),
-                Value::Str("Jani".into()),
-                Value::Str("7E".into()),
-            ],
-        })
+        .insert_rows(vec![
+            Value::Int(1),
+            Value::Str("Jani".into()),
+            Value::Str("7E".into()),
+        ])
         .unwrap();
     tabel_siswa
-        .insert_rows(HRows {
-            value: vec![
-                Value::Int(2),
-                Value::Str("Bunga Teman SD Jani".into()),
-                Value::Str("9A".into()),
-            ],
-        })
+        .insert_rows(vec![
+            Value::Int(2),
+            Value::Str("Bunga Teman SD Jani".into()),
+            Value::Str("9A".into()),
+        ])
         .unwrap();
     tabel_siswa
-        .insert_rows(HRows {
-            value: vec![
-                Value::Int(3),
-                Value::Str("Budi Bukan Pacar Jani".into()),
-                Value::Str("8B".into()),
-            ],
-        })
+        .insert_rows(vec![
+            Value::Int(3),
+            Value::Str("Budi Bukan Pacar Jani".into()),
+            Value::Str("8B".into()),
+        ])
         .unwrap();
 
     print_db(&db, siswa).unwrap();

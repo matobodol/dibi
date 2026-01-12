@@ -3,13 +3,17 @@ use prettytable::{Attr, Cell, Row, Table, color, format};
 use crate::{Database, display::pt_error::PtError};
 
 pub fn print_db(db: &Database, table_name: &str) -> Result<(), PtError> {
-    let mut pt = Table::new();
-    pt.set_format(*format::consts::FORMAT_BOX_CHARS);
-
+    if db.tabel.is_empty() {
+        println!("Belum ada Tabel..");
+        return Ok(());
+    }
     let tbl = db
         .tabel
         .get(table_name)
         .ok_or_else(|| PtError::TableNotFound)?;
+
+    let mut pt = Table::new();
+    pt.set_format(*format::consts::FORMAT_BOX_CHARS);
 
     let header: Vec<Cell> = tbl
         .header
@@ -30,14 +34,17 @@ pub fn print_db(db: &Database, table_name: &str) -> Result<(), PtError> {
 
     pt.add_row(Row::new(header));
 
-    for rows in &tbl.vrow.hrow {
-        let (l, c, r) = ("l", "c", "r");
+    let (l, c, r) = ("l", "c", "r");
+    for values in 0..tbl.vrow.vrow_len() {
+        let hrows = tbl
+            .vrow
+            .hrow_get_read(values)
+            .ok_or_else(|| PtError::RowsNotFound)?;
 
-        let row: Vec<Cell> = rows
-            .value
+        let hrows = hrows
             .iter()
-            .map(|v| {
-                let s = match v {
+            .map(|value| {
+                let s = match value {
                     crate::Value::Null => ("-".to_string(), c),
                     crate::Value::Int(v) => (v.to_string(), r),
                     crate::Value::Float(v) => (v.to_string(), r),
@@ -49,7 +56,8 @@ pub fn print_db(db: &Database, table_name: &str) -> Result<(), PtError> {
                 Cell::new(&s.0).style_spec(s.1)
             })
             .collect();
-        pt.add_row(Row::new(row));
+
+        pt.add_row(Row::new(hrows));
     }
 
     println!("Tabel: \"{}\"", table_name);

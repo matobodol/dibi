@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    Flags, HRows, HeaderType, Value,
+    Flags, HeaderType, Value,
     db::{Header, VRows},
     error::DbError,
 };
@@ -30,23 +30,23 @@ impl Tabel {
         Ok(())
     }
 
-    pub fn insert_rows(&mut self, hrow: HRows) -> Result<(), DbError> {
+    pub fn insert_rows(&mut self, hrow: Vec<Value>) -> Result<(), DbError> {
         let mut hrow = hrow;
-        let values_count = hrow.value.len();
-        let header_count = self.header.index_header.len();
+        let values_count = hrow.len();
+        let header_count = self.header.header_len();
 
         if values_count < header_count {
             self.header.validate_nullable(values_count)?;
 
             for _ in 0..(header_count - values_count) {
-                hrow.value.push(Value::Null);
+                hrow.push(Value::Null);
             }
         }
         if values_count > header_count {
             return Err(DbError::ValuesCountIsGreet);
         }
 
-        self.vrow.hrow.push(hrow);
+        self.vrow.insert_values(hrow);
         Ok(())
     }
 }

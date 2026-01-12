@@ -150,4 +150,8 @@ impl Header {
 
         Ok(())
     }
+
+    pub fn header_len(&self) -> usize {
+        self.index_header.len()
+    }
 }
