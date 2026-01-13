@@ -1,10 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::{
-    Flags, HeaderType, Value,
-    db::{Header, VRows},
-    error::DbError,
-};
+use crate::db::{DbError, Header, HeaderType, VRows, Value, flags::EFlags};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Tabel {
@@ -24,9 +20,9 @@ impl Tabel {
         &mut self,
         name: &str,
         tipe: HeaderType,
-        flags: Flags,
+        eflag: EFlags,
     ) -> Result<(), DbError> {
-        self.header.add(name, tipe, flags)?;
+        self.header.add(name, tipe, eflag)?;
         Ok(())
     }
 

@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::Value;
+use crate::db::Value;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 struct HRows {

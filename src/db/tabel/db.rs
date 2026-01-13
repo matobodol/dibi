@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use serde::{Deserialize, Serialize};
 
-use crate::{db::Tabel, error::DbError};
+use crate::db::{DbError, Tabel};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Database {

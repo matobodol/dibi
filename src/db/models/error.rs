@@ -1,4 +1,4 @@
-use crate::Value;
+use crate::db::Value;
 
 #[derive(Debug, PartialEq)]
 pub enum DbError {
