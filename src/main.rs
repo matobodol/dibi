@@ -1,6 +1,7 @@
 use mini_db::{
     Database, Tabel,
-    db::{HeaderType, Value, flags::EFlags},
+    db::{HeaderType, Value, flags::Eflags},
+    display::print_db::print_db,
 };
 
 fn main() {
@@ -9,10 +10,11 @@ fn main() {
 
     let user = db.tabel.get_mut("user").unwrap();
 
-    user.new_header("id", HeaderType::Int, EFlags::Pk).unwrap();
-    user.new_header("nama", HeaderType::Str, EFlags::Default)
+    user.new_header("id", HeaderType::Int, &[Eflags::Inc, Eflags::Pk])
         .unwrap();
-    user.new_header("alamat", HeaderType::Str, EFlags::Pk)
+    user.new_header("nama", HeaderType::Str, &[Eflags::Default])
+        .unwrap();
+    user.new_header("alamat", HeaderType::Str, &[Eflags::Default])
         .unwrap();
 
     user.insert_rows(vec![
@@ -22,19 +24,19 @@ fn main() {
     ])
     .unwrap();
     user.insert_rows(vec![
-        Value::Int(1),
-        Value::Str("Joni".into()),
-        Value::Str("jl samudra".into()),
+        Value::Int(2),
+        Value::Str("Joni bukan pacar jani".into()),
+        Value::Str("jl bumi bulat apa datar".into()),
     ])
     .unwrap();
     user.insert_rows(vec![
-        Value::Int(1),
-        Value::Str("Nono".into()),
-        Value::Str("jl bumi datar".into()),
+        Value::Int(003),
+        Value::Str("Jono nyebrang samudra".into()),
+        Value::Str("jl laut kidul".into()),
     ])
     .unwrap();
 
-    user.header.set_pk("nama").unwrap();
-
-    println!("{:#?}", user)
+    user.header.set_primary_key("id").unwrap();
+    println!("{:#?}", user);
+    print_db(&db, "user").unwrap();
 }

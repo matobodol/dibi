@@ -2,6 +2,7 @@ use crate::db::Value;
 
 #[derive(Debug, PartialEq)]
 pub enum DbError {
+    ProblemAddHeader,
     CannotBeNull(String),
     E(String),
     PrimaryKeyIsAxist {

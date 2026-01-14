@@ -7,7 +7,7 @@ pub(super) struct Flags {
     nullable: bool,
 }
 
-pub enum EFlags {
+pub enum Eflags {
     Default,
     Pk,
     Nul,
@@ -25,50 +25,38 @@ impl Default for Flags {
 }
 
 impl Flags {
-    pub(super) fn flag(&mut self, eflag: EFlags) {
-        match eflag {
-            EFlags::Pk => {
-                self.primary_key = true;
-                self.nullable = false;
-            }
-            EFlags::Nul => {
-                if !self.primary_key {
-                    self.nullable = true;
-                }
-            }
-            EFlags::Inc => self.increment = true,
-            EFlags::Default => {
-                Flags::default();
-                {}
-            }
-        }
+    pub(super) fn set_primary_key(&mut self) {
+        self.primary_key = true;
+        self.nullable = false;
     }
-    pub(super) fn unflag(&mut self, eflag: EFlags) {
-        match eflag {
-            EFlags::Pk => {
-                self.primary_key = false;
-                self.nullable = true;
-            }
-            EFlags::Nul => {
-                if self.primary_key {
-                    self.nullable = false;
-                }
-            }
-            EFlags::Inc => self.increment = false,
-            EFlags::Default => {
-                Flags::default();
-                {}
-            }
-        }
+    pub(super) fn unset_primary_key(&mut self) {
+        self.primary_key = false;
+        self.nullable = true;
     }
 
-    // read
-    pub(super) fn readflag(&self, eflag: EFlags) -> bool {
-        match eflag {
-            EFlags::Pk => self.primary_key,
-            EFlags::Nul => self.nullable,
-            EFlags::Inc => self.increment,
-            EFlags::Default => false,
+    pub(super) fn set_nullable(&mut self) {
+        if !self.primary_key {
+            self.nullable = true;
         }
+    }
+    pub(super) fn unset_nullable(&mut self) {
+        self.primary_key = false;
+    }
+
+    pub(super) fn set_increment(&mut self) {
+        self.increment = true;
+    }
+    pub(super) fn unset_increment(&mut self) {
+        self.increment = false;
+    }
+
+    pub(super) fn is_primary_key(&self) -> bool {
+        self.primary_key
+    }
+    pub(super) fn is_nullable(&self) -> bool {
+        self.nullable
+    }
+    pub(super) fn is_increment(&self) -> bool {
+        self.increment
     }
 }

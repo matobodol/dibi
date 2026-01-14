@@ -1,18 +1,18 @@
 use serde::{Deserialize, Serialize};
 
-use crate::db::{DbError, Header, HeaderType, VRows, Value, flags::EFlags};
+use crate::db::{DbError, Header, HeaderType, VRows, Value, flags::Eflags};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Tabel {
     pub header: Header,
-    pub vrow: VRows,
+    pub rows: VRows,
 }
 
 impl Tabel {
     pub fn new() -> Self {
         Self {
             header: Header::new(),
-            vrow: VRows::new(),
+            rows: VRows::new(),
         }
     }
 
@@ -20,7 +20,7 @@ impl Tabel {
         &mut self,
         name: &str,
         tipe: HeaderType,
-        eflag: EFlags,
+        eflag: &[Eflags],
     ) -> Result<(), DbError> {
         self.header.add(name, tipe, eflag)?;
         Ok(())
@@ -42,7 +42,7 @@ impl Tabel {
             return Err(DbError::ValuesCountIsGreet);
         }
 
-        self.vrow.insert_values(hrow);
+        self.rows.insert_values(hrow);
         Ok(())
     }
 }
