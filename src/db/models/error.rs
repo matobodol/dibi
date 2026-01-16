@@ -2,8 +2,14 @@ use crate::db::Value;
 
 #[derive(Debug, PartialEq)]
 pub enum DbError {
+    PrimaryKeyNotAxist,
+    RowNotFound(usize),
     ProblemAddHeader,
-    CannotBeNull(String),
+    CannotBeNull {
+        state: bool,
+        reason: String,
+        trigger: String,
+    },
     E(String),
     PrimaryKeyIsAxist {
         tip: String,

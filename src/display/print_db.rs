@@ -14,11 +14,10 @@ pub fn print_db(db: &Database, name: &str) -> Result<(), PtError> {
 
     let tbl = db.tabel.get(name).ok_or_else(|| PtError::TableNotFound)?;
     let cells: Vec<_> = tbl
-        .header
-        .get_header_name()
+        .get_list_header_name()
         .iter()
         .map(|name| {
-            if tbl.header.is_primary_key(name) {
+            if tbl.is_primary_key(name) {
                 let s = format!("*{}", name);
                 Cell::new(&s)
                     .style_spec(c)
@@ -32,10 +31,9 @@ pub fn print_db(db: &Database, name: &str) -> Result<(), PtError> {
 
     pt.add_row(Row::new(cells.clone()));
 
-    for values in 0..tbl.rows.vrow_len() {
+    for values in 0..tbl.vrow_len() {
         let hrows = tbl
-            .rows
-            .hrow_get_read(values)
+            .get_read_hrows(values)
             .ok_or_else(|| PtError::RowsNotFound)?;
 
         let hrows = hrows

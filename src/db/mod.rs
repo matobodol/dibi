@@ -1,3 +1,6 @@
+pub mod dibi;
+pub use dibi::*;
+
 pub mod models;
 pub use models::*;
 
@@ -8,4 +11,3 @@ pub mod kolom;
 pub use kolom::*;
 
 pub mod baris;
-pub use baris::*;

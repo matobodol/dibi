@@ -9,30 +9,14 @@ use crate::db::{
 };
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct Header {
+pub(crate) struct Header {
     column: Vec<ColumnDef>,
     index_header: HashMap<String, usize>,
     index_primary: Option<usize>,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-struct HeaderIdx(usize);
-impl HeaderIdx {
-    fn get(self) -> usize {
-        self.0
-    }
-}
-
 impl Header {
-    fn header_id(&self, name: &str) -> Result<HeaderIdx, DbError> {
-        self.index_header
-            .get(name)
-            .copied()
-            .map(HeaderIdx)
-            .ok_or(DbError::HeaderNotFound)
-    }
-
-    pub fn new() -> Self {
+    pub(crate) fn new() -> Self {
         Self {
             column: Vec::new(),
             index_header: HashMap::new(),
@@ -40,9 +24,12 @@ impl Header {
         }
     }
 
-    pub fn add(&mut self, name: &str, tipe: HeaderType, eflags: &[Eflags]) -> Result<(), DbError> {
-        self.validate_duplicate_header(name)?;
-
+    pub(crate) fn add(
+        &mut self,
+        name: &str,
+        tipe: HeaderType,
+        eflags: &[Eflags],
+    ) -> Result<(), DbError> {
         let mut flags = Flags::default();
         for f in eflags {
             match f {
@@ -71,7 +58,103 @@ impl Header {
 
         Ok(())
     }
-    pub fn set_primary_key(&mut self, name: &str) -> Result<(), DbError> {
+
+    pub(crate) fn drop_header_by_index(&mut self, idx: usize) {
+        self.column.remove(idx);
+    }
+
+    pub(crate) fn update_index_header(&mut self) {
+        self.index_header.clear();
+        for (i, v) in self.column.iter().enumerate() {
+            self.index_header.insert(v.get_name().to_string(), i);
+        }
+    }
+
+    // pub(crate) fn get_name(&self, index: usize) -> &str {
+    //     self.column[index].get_name()
+    // }
+
+    pub(crate) fn header_len(&self) -> usize {
+        self.index_header.len()
+    }
+
+    // pub(crate) fn get_index_pk(&self) -> Option<usize> {
+    //     self.index_primary
+    // }
+
+    pub(crate) fn is_axisting(&self, name: &str) -> bool {
+        self.get_list_names().contains(&name)
+    }
+
+    pub(crate) fn get_list_names(&self) -> Vec<&str> {
+        self.column.iter().map(|k| k.get_name()).collect()
+    }
+
+    pub(crate) fn get_header_type(&self, name: &str) -> Result<&HeaderType, DbError> {
+        self.to_column_ref(name, |c| c.header_tipe())
+    }
+
+    pub(crate) fn get_header_index(&self, name: &str) -> Result<usize, DbError> {
+        Ok(self.header_id(name)?.get())
+    }
+
+    pub(crate) fn is_primary_key(&self, name: &str) -> bool {
+        self.to_column(name, |c| c.is_primary_key())
+            .unwrap_or(false)
+    }
+    pub(crate) fn is_nullable(&self, name: &str) -> bool {
+        self.to_column(name, |c| c.is_nullable()).unwrap_or(false)
+    }
+    pub(crate) fn is_increment(&self, name: &str) -> bool {
+        self.to_column(name, |c| c.is_increment()).unwrap_or(false)
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct HeaderIdx(usize);
+impl HeaderIdx {
+    fn get(self) -> usize {
+        self.0
+    }
+}
+
+// helper
+impl Header {
+    // get index ccolumn by name
+    fn header_id(&self, name: &str) -> Result<HeaderIdx, DbError> {
+        self.index_header
+            .get(name)
+            .copied()
+            .map(HeaderIdx)
+            .ok_or(DbError::HeaderNotFound)
+    }
+
+    // predicate for Ccolumn
+    fn to_column<T>(&self, name: &str, f: impl FnOnce(&ColumnDef) -> T) -> Result<T, DbError> {
+        let idx = self.header_id(name)?;
+        Ok(f(&self.column[idx.get()]))
+    }
+    fn to_column_ref<'a, T>(
+        &'a self,
+        name: &str,
+        f: impl FnOnce(&'a ColumnDef) -> T,
+    ) -> Result<T, DbError> {
+        let idx = self.header_id(name)?;
+        Ok(f(&self.column[idx.get()]))
+    }
+    fn to_column_mut<T>(
+        &mut self,
+        name: &str,
+        f: impl FnOnce(&mut ColumnDef) -> T,
+    ) -> Result<T, DbError> {
+        let idx = self.header_id(name)?;
+        Ok(f(&mut self.column[idx.get()]))
+    }
+}
+
+// flags services
+impl Header {
+    pub(crate) fn set_primary_key(&mut self, name: &str) -> Result<(), DbError> {
         let &new_idx = self.index_header.get(name).ok_or(DbError::HeaderNotFound)?;
 
         if let Some(old_idx) = self.index_primary {
@@ -84,67 +167,30 @@ impl Header {
 
         Ok(())
     }
+    pub fn unset_primary_key(&mut self) -> Result<(), DbError> {
+        let idx = self
+            .index_primary
+            .ok_or_else(|| DbError::PrimaryKeyNotAxist)?;
 
-    fn validate_duplicate_header(&self, name: &str) -> Result<(), DbError> {
-        if self.index_header.contains_key(name) {
-            return Err(DbError::DuplicateHeaderName {
-                name: name.into(),
-                tip: "nama header tidak boleh sama.".into(),
-            });
-        }
+        self.column[idx].unset_primary_key();
+        self.index_primary = None;
         Ok(())
     }
 
-    pub fn validate_nullable(&self, idx_column: usize) -> Result<(), DbError> {
-        let nullable = self.column[idx_column].is_nullable();
-        let isprimary = self.column[idx_column].is_primary_key();
-
-        if !nullable || isprimary {
-            return Err(DbError::CannotBeNull(
-                "Protected by 'fn validate_nullable()'".into(),
-            ));
-        }
-
+    pub fn set_nullable(&mut self, name: &str) -> Result<(), DbError> {
+        self.to_column_mut(name, |k| k.set_nullable())?;
         Ok(())
     }
-
-    pub fn validate_values_count(&self, row_len: usize) -> Result<(), DbError> {
-        let header_len = self.index_header.len();
-
-        if row_len < header_len {
-            return Err(DbError::ValuesCountIsLess);
-        } else if row_len > header_len {
-            return Err(DbError::ValuesCountIsGreet);
-        }
-
+    pub fn unset_nullable(&mut self, name: &str) -> Result<(), DbError> {
+        self.to_column_mut(name, |k| k.unset_nullable())?;
         Ok(())
     }
-
-    pub fn header_len(&self) -> usize {
-        self.index_header.len()
+    pub fn set_increment(&mut self, name: &str) -> Result<(), DbError> {
+        self.to_column_mut(name, |k| k.set_increment())?;
+        Ok(())
     }
-
-    pub fn get_header_name(&self) -> Vec<&str> {
-        self.column.iter().map(|k| k.get_name()).collect()
-    }
-    pub fn get_header_type(&self, name: &str) -> Result<&HeaderType, DbError> {
-        self.header_id(name)
-            .map(|idx| self.column[idx.get()].header_tipe())
-    }
-
-    pub fn is_primary_key(&self, name: &str) -> bool {
-        self.header_id(name)
-            .map(|idx| self.index_primary == Some(idx.get()))
-            .unwrap_or(false)
-    }
-    pub fn is_nullable(&self, name: &str) -> bool {
-        self.header_id(name)
-            .map(|idx| self.column[idx.get()].is_nullable())
-            .unwrap_or(false)
-    }
-    pub fn is_increment(&self, name: &str) -> bool {
-        self.header_id(name)
-            .map(|idx| self.column[idx.get()].is_increment())
-            .unwrap_or(false)
+    pub fn unset_increment(&mut self, name: &str) -> Result<(), DbError> {
+        self.to_column_mut(name, |k| k.unset_increment())?;
+        Ok(())
     }
 }

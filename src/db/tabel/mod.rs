@@ -1,5 +1,3 @@
-pub mod db;
-pub use db::*;
-
 pub mod tabel;
+pub mod validate;
 pub use tabel::*;
