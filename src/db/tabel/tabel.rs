@@ -1,6 +1,14 @@
 use serde::{Deserialize, Serialize};
 
-use crate::db::{DbError, HeaderType, Value, baris::baris::VRows, flags::Eflags, schema::Header};
+use crate::db::{
+    DbError, HeaderType, Value,
+    baris::{
+        baris::VRows,
+        filter::{Filter, Op, Update},
+    },
+    flags::Eflags,
+    schema::Header,
+};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Tabel {
@@ -123,6 +131,27 @@ impl Tabel {
             self.rows.drop_vrow(v);
         }
 
+        Ok(())
+    }
+
+    pub fn apply_delete(&mut self, name: &str, op: Op, value: Value) -> Result<(), DbError> {
+        let filter = Filter::f(self.get_index_header(name)?, op, value);
+        self.rows.apply_delete(&filter);
+
+        Ok(())
+    }
+    pub fn apply_update(
+        &mut self,
+        _where: &str,
+        set: Value,
+        select_column: &str,
+        op: Op,
+        select_value: Value,
+    ) -> Result<(), DbError> {
+        let filter = Filter::f(self.get_index_header(select_column)?, op, select_value);
+        let update = Update::u(self.get_index_header(_where)?, set);
+
+        self.rows.apply_update(update, &filter);
         Ok(())
     }
 }

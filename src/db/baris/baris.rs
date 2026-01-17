@@ -1,10 +1,26 @@
 use serde::{Deserialize, Serialize};
 
-use crate::db::Value;
+use crate::db::{
+    Value,
+    baris::filter::{Filter, Update, match_row},
+};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-struct HRows {
+pub struct HRows {
     values: Vec<Value>,
+}
+
+impl HRows {
+    pub(super) fn get(&self, idx: usize) -> Option<&Value> {
+        self.values.get(idx)
+    }
+    pub(super) fn get_mut(&mut self, idx: usize) -> Option<&mut Value> {
+        self.values.get_mut(idx)
+    }
+
+    pub(super) fn iter(&self) -> impl Iterator<Item = &Value> {
+        self.values.iter()
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -36,12 +52,29 @@ impl VRows {
         self.hrow.remove(idx);
     }
 
+    pub(crate) fn apply_delete(&mut self, filter: &Filter) {
+        self.hrow.retain(|hrow| !match_row(hrow, filter));
+    }
+    pub(crate) fn apply_update(&mut self, update: Update, filter: &Filter) {
+        for hrow in self.hrow.iter_mut() {
+            if match_row(hrow, filter) {
+                if let Some(value) = hrow.get_mut(update.column) {
+                    *value = update.value.clone();
+                }
+            }
+        }
+    }
+
     pub(crate) fn vrow_len(&self) -> usize {
         self.hrow.len()
     }
 
     pub(crate) fn hrow_len(&self, idx_vrow: usize) -> Option<usize> {
         self.hrow.get(idx_vrow).map(|v| v.values.len())
+    }
+
+    pub fn vrow_iter(&self) -> impl Iterator<Item = &HRows> {
+        self.hrow.iter()
     }
 
     pub(crate) fn get_read_hrows(&self, idx_vrow: usize) -> Option<&[Value]> {

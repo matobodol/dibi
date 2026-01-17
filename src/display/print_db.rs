@@ -1,18 +1,12 @@
 use prettytable::{Attr, Cell, Row, Table, color, format};
 
-use crate::{Database, db::Value, display::pt_error::PtError};
+use crate::{Tabel, db::Value, display::pt_error::PtError};
 
-pub fn print_db(db: &Database, name: &str) -> Result<(), PtError> {
-    if db.tabel.is_empty() {
-        println!("Database masih kosong..");
-        return Ok(());
-    }
-
+pub fn print_db(tbl: &Tabel) -> Result<(), PtError> {
     let mut pt = Table::new();
     pt.set_format(*format::consts::FORMAT_BOX_CHARS);
     let (l, c, r) = ("l", "c", "r");
 
-    let tbl = db.tabel.get(name).ok_or_else(|| PtError::TableNotFound)?;
     let cells: Vec<_> = tbl
         .get_list_header_name()
         .iter()
@@ -48,7 +42,13 @@ pub fn print_db(db: &Database, name: &str) -> Result<(), PtError> {
                     Value::Enum { variant } => (variant.clone(), c),
                 };
 
-                Cell::new(&s.0).style_spec(s.1)
+                if s.0 == "-" {
+                    Cell::new(&s.0)
+                        .style_spec(s.1)
+                        .with_style(Attr::ForegroundColor(color::BRIGHT_WHITE))
+                } else {
+                    Cell::new(&s.0).style_spec(s.1)
+                }
             })
             .collect();
 
@@ -56,5 +56,6 @@ pub fn print_db(db: &Database, name: &str) -> Result<(), PtError> {
     }
 
     pt.printstd();
+    println!();
     Ok(())
 }
